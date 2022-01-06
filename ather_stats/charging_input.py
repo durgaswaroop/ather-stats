@@ -8,7 +8,6 @@ import csv
 
 
 CHARGE_STATS_FILE = 'ather_charging.csv'
-BATTERy_KWH = 2.8
 
 
 COLUMNS = [

@@ -9,7 +9,7 @@ from ather_stats.constants import CHARGE_STATS_FILE, BATTERY_KWH
 
 
 def charging_stats():
-    put_markdown('## Ather Charging Stats')
+    put_markdown('## Charging Statistics')
     df = pd.read_csv(CHARGE_STATS_FILE)
 
     # No. of times charged
@@ -33,6 +33,12 @@ def charging_stats():
     fast_charged_df = df[df['Is Fast Charging'] == True]
     avg_fast_charge_per_min = 60 * sum(fast_charged_df['Charged %'])/sum(fast_charged_df['Time taken'])
 
+    total_slow_charged_time = dt.timedelta(minutes=int(slow_charged_df['Time taken'].sum()))
+    total_fast_charged_time = dt.timedelta(minutes=int(fast_charged_df['Time taken'].sum()))
+
+    avg_slow_charged_time = dt.timedelta(minutes=int(slow_charged_df['Time taken'].mean()))
+    avg_fast_charged_time = dt.timedelta(minutes=int(fast_charged_df['Time taken'].mean()))
+
     # KWH charged so far
     total_slow_charged_percentage = slow_charged_df['Charged %'].sum()
     total_fast_charged_percentage = fast_charged_df['Charged %'].sum()
@@ -40,22 +46,19 @@ def charging_stats():
     total_fast_charged_kwh = total_fast_charged_percentage * BATTERY_KWH / 100
 
     put_table([
-        ['Number of times charged',  num_times_charged],
-        ['Total time charged', humanize.naturaldelta(total_time_charged)],
-        ['Avg. Percentage points gained in one charge', f'{avg_percentage_charge}%'],
-        ['Number of times fast charged', num_fast_charging],
-        ['Average charge gain by slow charge in One hour', f'{avg_slow_charge_per_min: .1f}%'],
-        ['Average charge gain by fast charge in One hour', f'{avg_fast_charge_per_min :.1f}%'],
-        ['Total electricity consumed by Slow charge', f'{total_slow_charged_kwh: .1f} units'],
-        ['Total electricity consumed by Fast charge', f'{total_fast_charged_kwh: .1f} units'],
-    ], header=[])
-    
+        ['', 'Regular charge', 'Fast Charge'],
+        ['No. of times charged',num_times_charged - num_fast_charging,  num_fast_charging],
+        ['Time charged', humanize.naturaldelta(total_slow_charged_time), humanize.naturaldelta(total_fast_charged_time)],
+        ['Avg. charge gain in one hour', f'{avg_slow_charge_per_min: .1f}%', f'{avg_fast_charge_per_min :.1f}%'],
+        ['Electricity Consumed', f'{total_slow_charged_kwh: .1f} units', f'{total_fast_charged_kwh: .1f} units'],
+        ['Avg. Charge duration', humanize.naturaldelta(avg_slow_charged_time), humanize.naturaldelta(avg_fast_charged_time)]
+    ])
+
     # Aggregate on total charge time per day
     day_grouped_by_charging_time = df.groupby('Start Date').sum()['Time taken']
     fig = px.bar(day_grouped_by_charging_time, title='Charging time in mins by day')
     html = fig.to_html(include_plotlyjs="require", full_html=False)
     put_html(html)
-
 
 
 if __name__ == '__main__':
